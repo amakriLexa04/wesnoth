@@ -1439,9 +1439,10 @@ function ai_helper.my_moves()
     ---@type ai_move[]
     local my_moves = {}
     for key,value in pairs(dstsrc) do
+        local hex_x, hex_y = ai_helper.get_LS_xy(key)
         table.insert( my_moves,
             {   src = { x = value[1].x , y = value[1].y },
-                dst = { x = key.x , y = key.y }
+                dst = { x = hex_x , y = hex_y }
             }
         )
     end
@@ -1460,9 +1461,10 @@ function ai_helper.enemy_moves()
 
     local enemy_moves = {}
     for key,value in pairs(dstsrc) do
+        local hex_x, hex_y = ai_helper.get_LS_xy(key)
         table.insert( enemy_moves,
             {   src = { x = value[1].x , y = value[1].y },
-                dst = { x = key.x , y = key.y }
+                dst = { x = hex_x , y = hex_y }
             }
         )
     end
