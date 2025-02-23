@@ -1,7 +1,7 @@
 local _ = wesnoth.textdomain "wesnoth-tdg"
 local utils = wesnoth.require "wml-utils"
 
-local spell_data = wesnoth.dofile('data/campaigns/The_Deceivers_Gambit/lua/spell_set.lua')
+local spell_data = wesnoth.dofile('campaigns/The_Deceivers_Gambit/lua/spell_set.lua')
 local locked = spell_data.locked
 local skill_set = spell_data.skill_set
 local selected_unit_id
@@ -11,6 +11,18 @@ local wml_actions = wesnoth.wml_actions
 
 -- metatable for GUI tags
 local T = wml.tag
+
+function deep_copy(original)
+    local copy = {}
+    for g, v in pairs(original) do
+        if type(v) == "table" then
+            copy[g] = deep_copy(v)
+        else
+            copy[g] = v
+        end
+    end
+    return copy
+end
 
 
 --###########################################################################################################################################################
@@ -335,10 +347,10 @@ end
 	if (selecting) then
 		dialog_result = wesnoth.sync.evaluate_single(function()
             retval = gui.show_dialog( dialog, preshow )
-            result_table.wait_to_select_spells = retval==2 and 'yes' or 'no' --not nil, or else the key appears blank
+            result_table.wait_to_select_spells_Delfador = retval==2 and 'yes' or 'no' --not nil, or else the key appears blank
             return result_table;
         end)
-        wml.variables["wait_to_select_spells_" .. caster.id] = result_table.wait_to_select_spells; --set wait_to_select_spells manually, since it often gets overwritten to 'no' above
+        wml.variables["wait_to_select_spells_" .. caster.id] = result_table.wait_to_select_spells_Delfador; --set wait_to_select_spells_Delfador manually, since it often gets overwritten to 'no' above
 		
 		skills_equipped = {}
 		for skill_id,skill_value in pairs(dialog_result) do
@@ -404,7 +416,6 @@ end
 		for i,u in ipairs(units) do
         selected_unit_id = u.id
 		wml.variables ["current_caster"] = u.id
-		--wesnoth.interface.delay(50)
 		
         display_skills_dialog(true)
 		
@@ -684,6 +695,29 @@ end
             wml.variables["caster_" .. u.id .. ".spell_equipped"] = table.concat(spell_to_equip, ",")
             wml.fire("refresh_skills", { id = u.id })
         end
+    end
+	
+	wml_actions["find_equipped_spell"] = function(cfg)
+        if not cfg.spell_id then
+		    wml.variables["equipped_spell_found"] = false
+		    return
+		end
+        
+        local filter = wml.get_child(cfg, "filter") or wml.error "[find_equipped_spell] missing required [filter] tag"
+        local units = wesnoth.units.find(filter)
+        
+        for _, u in ipairs(units) do
+            local equipped_var = wml.variables["caster_" .. u.id .. ".spell_equipped"] or ""
+            
+            for spell in equipped_var:gmatch("[^,]+") do
+                if spell == cfg.spell_id then
+                    wml.variables["equipped_spell_found"] = true
+                    return
+                end
+            end
+        end
+        
+        wml.variables["equipped_spell_found"] = false
     end
 	
 	wml_actions["remove_caster"] = function(cfg)
